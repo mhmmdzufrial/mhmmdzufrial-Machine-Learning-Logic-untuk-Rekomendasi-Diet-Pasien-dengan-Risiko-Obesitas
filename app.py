@@ -110,7 +110,7 @@ diet_sim = ctrl.ControlSystemSimulation(diet_ctrl)
 
 # --- 3. Prediction Functions (from notebook) ---
 def hitung_kondisi_medis(kondisi_str):
-    if not isinstance(kondisi_str, str): # Handle NaN or non-string inputs
+    if not isinstance(kondisi_str, str):
         return 0
     kondisi_list = kondisi_str.split(',')
     kondisi_list = [k.strip() for k in kondisi_list if k.strip()]
@@ -167,10 +167,8 @@ def rekomendasi_cbf(index_pasien, top_n=5):
 def get_cbf_majority_vote(index_pasien, top_n=5):
     similar = rekomendasi_cbf(index_pasien, top_n)
     labels = [s['Label'] for s in similar]
-    if not labels: # Handle case where no similar patients are found
-        # Fallback if no similar patients are found (e.g., for very unique new inputs)
-        # Or, consider a default like 'Sedang' or the overall majority in the dataset
-        return 'Sedang' # Default label if no similar patients found
+    if not labels:
+        return 'Sedang'
     vote_count = Counter(labels)
     return vote_count.most_common(1)[0][0]
 
@@ -276,10 +274,10 @@ def preprocess_new_data(new_patient_data, df_existing, scaler_obj, fitur_final_t
                                         'Kadar Lemak Tubuh (%)','Kadar Kolesterol (mg/dL)',
                                         'Aktivitas_enc', 'Berat Badan (kg)', 'Tinggi Badan (m)',
                                         'Denyut Jantung (bpm)', 'Kebutuhan Kalori (kkal)']]
-    fitur_numerik_new.fillna(df_existing.mean(numeric_only=True), inplace=True) # Fill NaNs using original df means
+    fitur_numerik_new.fillna(df_existing.mean(numeric_only=True), inplace=True)
 
     fitur_final_new = pd.concat([fitur_numerik_new, df_kondisi_new, df_alergi_new], axis=1)
-    fitur_final_new.fillna(0, inplace=True) # Fill any remaining NaNs, especially in one-hot encoded columns
+    fitur_final_new.fillna(0, inplace=True)
 
     # Align columns before scaling - crucial for consistent feature order
     fitur_final_new = fitur_final_new.reindex(columns=fitur_final_training_data.columns, fill_value=0)
@@ -293,6 +291,14 @@ def preprocess_new_data(new_patient_data, df_existing, scaler_obj, fitur_final_t
 # --- 4. Streamlit UI ---
 st.title('🩺 Sistem Rekomendasi Diet Pasien Obesitas')
 st.write('Aplikasi ini memberikan rekomendasi diet berdasarkan data pasien yang mirip dan logika fuzzy.')
+
+# Initialize diet_info to avoid NameError if no patient is selected/data entered initially
+diet_info = {
+    'Rekomendasi': [],
+    'Menu Harian': [],
+    'Pantangan': []
+}
+final_prediction = None # Initialize final_prediction
 
 # Option to select an existing patient or enter new data
 selection_mode = st.radio(
@@ -415,7 +421,7 @@ elif (selection_mode == 'Masukkan Data Pasien Baru' and 'final_prediction_new_da
         st.write("IMT Pasien: Belum terhitung atau tidak valid")
 
 
-if 'final_prediction' in locals() or 'final_prediction_new_data' in st.session_state:
+if final_prediction is not None:
     st.write("**Rekomendasi Utama:**")
     for rec in diet_info['Rekomendasi']:
         st.write(f"- {rec}")
